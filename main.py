@@ -1,7 +1,27 @@
+from json import JSONDecodeError
 from tkinter import *
 from tkinter import messagebox
 import random
 import pyperclip
+import json
+
+
+# ---------------------------- FIND PASSWORD ------------------------------- #
+def find_password():
+    try:
+        with open("data.json", "r") as file:
+            data = json.load(file)
+            user_input = website_entry.get()
+
+            try:
+                messagebox.showinfo(title=f"{user_input}", message=f"Email: {data[user_input]['email']}"
+                                                                   f"\nPassword: {data[user_input]['password']}")
+
+            except KeyError:
+                messagebox.showwarning(title="Error", message="No details for this website exists.")
+
+    except JSONDecodeError:
+        messagebox.showwarning(title="Error", message="No Data File Found.")
 
 
 # ---------------------------- PASSWORD GENERATOR ------------------------------- #
@@ -29,22 +49,34 @@ def save_info():
     website_saved = website_entry.get()
     email_saved = email_entry.get()
     pw_saved = password_entry.get()
-    print(len(website_saved))
-    print(len(email_saved))
-    print(len(pw_saved))
+    new_data = {
+        website_saved: {
+            "email": email_saved,
+            "password": pw_saved,
+        }}
 
-    if len(website_saved) == 0 or len(email_saved) == 0 or len(pw_saved) == 0:
+    if len(website_saved) == 0 or len(pw_saved) == 0:
         messagebox.showwarning(title="Oops", message="Please don't leave any fields empty!")
     else:
-        is_ok = messagebox.askokcancel(title=website_saved, message=f"These are the details entered:"
-                                                                    f"\nEmail: {email_saved}"
-                                                                    f"\nPassword: {pw_saved}"
-                                                                    f"\nIs it ok to save?")
-
-        if is_ok:
-            with open("pw.csv", "a") as file:
-                file.write(f"{website_saved},{email_saved},{pw_saved}\n")
-
+        
+        try:
+            with open("data.json", "r") as file:
+                # reading old data
+                data = json.load(file)
+                # updating old data with new data
+                data.update(new_data)
+                
+        except FileNotFoundError:
+            with open("data.json", "w") as file:
+                # saving updated data
+                json.dump(new_data, file, indent=4)
+                
+        else:
+            with open("data.json", "w") as file:
+                # saving updated data
+                json.dump(data, file, indent=4)
+                
+        finally:
             website_entry.delete(0, END)
             password_entry.delete(0, END)
 
@@ -72,8 +104,8 @@ password_label.grid(column=0, row=3)
 
 # Entries
 
-website_entry = Entry(width=40)
-website_entry.grid(column=1, row=1, columnspan=2)
+website_entry = Entry(width=22)
+website_entry.grid(column=1, row=1)
 website_entry.focus()
 
 email_entry = Entry(width=40)
@@ -84,6 +116,9 @@ password_entry = Entry(width=22)
 password_entry.grid(column=1, row=3)
 
 # Buttons
+
+search_button = Button(text="Search", width=12, command=find_password)
+search_button.grid(column=2, row=1)
 
 gen_pw_button = Button(text="Generate password", command=generate_password)
 gen_pw_button.grid(column=2, row=3)
